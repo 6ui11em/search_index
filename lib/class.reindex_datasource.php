@@ -10,6 +10,8 @@ Class ReindexDataSource extends Datasource{
 	public $dsParamREDIRECTONEMPTY = 'no';
 	public $dsParamSORT = 'system:id';
 	public $dsParamSTARTPAGE = '1';
+
+	public $dsParamLANGUAGE = '';
 	
 	public $dsParamINCLUDEDELEMENTS = array('system:pagination');
 	public $dsParamASSOCIATEDENTRYCOUNTS = 'no';		
@@ -30,7 +32,7 @@ Class ReindexDataSource extends Datasource{
 		$result = new XMLElement($this->dsParamROOTELEMENT);
 		
 		try{
-			include(TOOLKIT . '/data-sources/datasource.section.php');
+			include(EXTENSIONS . '/search_index/data-sources/datasource.section.php');
 		}
 		catch(Exception $e){
 			$result->appendChild(new XMLElement('error', $e->getMessage()));

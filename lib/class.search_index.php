@@ -77,31 +77,68 @@ Class SearchIndex {
 		
 		// run entry though filters
 		$entry_prefilter = self::$_entry_manager->fetch($entry, $section, 1, 0, $where, $joins, FALSE, FALSE);
-		
+	
 		// if no entry found, it didn't pass the pre-filtering
 		if (empty($entry_prefilter)) return;
 		
 		// if entry passes filtering, pass entry_id as a DS filter to the EntryXMLDataSource DS
 		$entry = reset($entry_prefilter);
 		$entry = $entry['id'];
-		
+				
 		// create a DS and filter on System ID of the current entry to build the entry's XML			
 		$ds = new EntryXMLDataSource(Administration::instance(), NULL, FALSE);
 		$ds->dsParamINCLUDEDELEMENTS = $indexed_sections[$section]['fields'];
 		$ds->dsParamFILTERS['id'] = $entry;
 		$ds->dsSource = (string)$section;
 		
-		$param_pool = array();
-		$entry_xml = $ds->grab($param_pool);
-		
-		require_once(TOOLKIT . '/class.xsltprocess.php');
+		// check if there are multilingual field in the indexes
+		$section_multlingual = false;		
+		foreach($indexed_sections[$section]['fields'] as $element_name) {
+			$field_id = self::$_entry_manager->fieldManager->fetchFieldIDFromElementName($element_name);
+			$type = self::$_entry_manager->fieldManager->fetchFieldTypeFromID($field_id);
+			if ($type == 'multilingual') {
+				$section_multlingual = true;
+			}
+		}
 
-		// get text value of the entry
-		$proc = new XsltProcess();
-		$data = $proc->process($entry_xml->generate(), file_get_contents(EXTENSIONS . '/search_index/lib/parse-entry.xsl'));
-		$data = trim($data);
+		if ($section_multlingual) {
+
+			$supported_language_codes = explode(',', General::Sanitize(Symphony::Configuration()->get('languages', 'language_redirect')));
+			$supported_language_codes = array_map('trim', $supported_language_codes);
+			$supported_language_codes = array_filter($supported_language_codes);
+	
+			foreach ($supported_language_codes as $language) {				
+				$param_pool = array();
+				$ds->dsParamLANGUAGE = $language;
+				
+				$entry_xml = $ds->grab($param_pool);
+				
+				require_once(TOOLKIT . '/class.xsltprocess.php');
 		
-		self::saveEntryIndex($entry, $section, $data);
+				// get text value of the entry
+				$proc = new XsltProcess();
+				$data = $proc->process($entry_xml->generate(), file_get_contents(EXTENSIONS . '/search_index/lib/parse-entry.xsl'));
+				$data = trim($data);
+				
+				self::saveEntryIndex($entry, $section, $data, $language);
+			}
+
+		} else {
+
+			$param_pool = array();
+	
+			$entry_xml = $ds->grab($param_pool);
+			
+			require_once(TOOLKIT . '/class.xsltprocess.php');
+	
+			// get text value of the entry
+			$proc = new XsltProcess();
+			$data = $proc->process($entry_xml->generate(), file_get_contents(EXTENSIONS . '/search_index/lib/parse-entry.xsl'));
+			$data = trim($data);
+			
+			self::saveEntryIndex($entry, $section, $data);
+		
+		}
 	}
 	
 	/**
@@ -111,11 +148,12 @@ Class SearchIndex {
 	* @param int $section
 	* @param string $data
 	*/
-	public function saveEntryIndex($entry_id, $section_id, $data) {
+	public function saveEntryIndex($entry_id, $section_id, $data, $language = null) {
 		Symphony::Database()->insert(
 			array(
 				'entry_id' => $entry_id,
 				'section_id' => $section_id,
+				'language' => $language,
 				'data' => $data
 			),
 			'tbl_search_index'

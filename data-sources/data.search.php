@@ -59,6 +59,7 @@
 			$sort = isset($get[$param_sort]) ? $get[$param_sort] : 'score';
 			$direction = isset($get[$param_direction]) ? strtolower($get[$param_direction]) : 'desc';
 			$sections = isset($get[$param_sections]) ? $get[$param_sections] : null;
+			$language = isset($_REQUEST['language']) ? $_REQUEST['language'] : '%';
 			
 			$this->dsParamSTARTPAGE = isset($get[$param_page]) ? (int)$get[$param_page] : $this->dsParamSTARTPAGE;
 			
@@ -108,6 +109,7 @@
 				WHERE
 					MATCH(index.data) AGAINST ('%1\$s' IN BOOLEAN MODE)
 					AND e.section_id IN ('%2\$s')
+					AND (index.language LIKE '%6\$s' OR index.language IS NULL)
 				ORDER BY
 					%3\$s
 				LIMIT %4\$d, %5\$d",
@@ -125,9 +127,12 @@
 				max(0, ($this->dsParamSTARTPAGE - 1) * $this->dsParamLIMIT),
 				
 				// limit
-				(int)$this->dsParamLIMIT
+				(int)$this->dsParamLIMIT,
+
+				// language
+				$language
 			);
-			
+						
 			$result->setAttributeArray(
 				array(
 					'keywords' => General::sanitize($keywords),

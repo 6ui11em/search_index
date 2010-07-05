@@ -60,6 +60,7 @@
 					  `id` int(11) NOT NULL auto_increment,
 					  `entry_id` int(11) NOT NULL,
 					  `section_id` int(11) NOT NULL,
+					  `language` varchar(2) NOT NULL,
 					  `data` text,
 					  PRIMARY KEY (`id`),
 					  FULLTEXT KEY `data` (`data`)

@@ -11,6 +11,8 @@ Class EntryXMLDataSource extends Datasource{
 	public $dsParamSORT = 'system:id';
 	public $dsParamSTARTPAGE = '1';
 	
+	public $dsParamLANGUAGE = '';
+	
 	public function __construct(&$parent, $env=NULL, $process_params=TRUE){
 		parent::__construct($parent, $env, $process_params);
 	}
@@ -24,7 +26,7 @@ Class EntryXMLDataSource extends Datasource{
 		$result = new XMLElement($this->dsParamROOTELEMENT);
 		
 		try{
-			include(TOOLKIT . '/data-sources/datasource.section.php');
+			include(EXTENSIONS . '/search_index/data-sources/datasource.section.php');
 		}
 		catch(Exception $e){
 			$result->appendChild(new XMLElement('error', $e->getMessage()));
